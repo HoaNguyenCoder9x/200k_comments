@@ -2,8 +2,7 @@ import os
 import pandas as pd 
 from utilities import convert_unidecode, modified_string, count_str
 import numpy as np
-
-# import duckdb 
+import duckdb 
 
 
 
@@ -16,18 +15,23 @@ def read_source(file_path: str):
     Read file csv return DF
     
     """
+
     data = []
     # Read file line by line 
     with open(file_path, 'r', encoding='utf-8') as file:
         for line in file:
             data.append(line.strip().split('\n'))
-    df = pd.DataFrame(data)
-    
+
+
+
+    df = pd.DataFrame(data)    
     # Rename columns name
     df.columns = ['comments']
     print('Read data from file success, return DF ')
     print(f'Number of rows count in file: {len(data)}/236100')
+
     return df
+
 
 
 def processing(df):
@@ -76,8 +80,19 @@ def processing(df):
     return df
     
 
-def write_to_db():
-    pass
+def write_sink():
+    """
+    write data from DF to DuckDB
+    """
+
+
+    with duckdb.connect('uat_database.duckdb') as conn:
+        conn.execute(f'create table if not exists social_comments as select * from df')
+        tables = conn.execute("SELECT * FROM information_schema.tables WHERE table_schema = 'main';").fetchdf()
+        print(tables)
+        data = conn.execute('select * from social_comments').fetch_df()        
+    
+    return data
 
 
 
@@ -91,8 +106,17 @@ file_path = '200k_comments.csv'
 list_key_words = ['vc','thuy tien','cong vinh', 'bao lu','cong vien thuy tinh','mien trung','tu thien','vo chong']
 
 
+# Extract
 data = read_source(file_path)
+# Transform
 df = processing(data)
-print(df.head())
+# Load
+sink = write_sink()
+
+
+# OUT TO CONSOLE
 print(df.columns)
 print(df.shape)
+print(sink)
+
+
